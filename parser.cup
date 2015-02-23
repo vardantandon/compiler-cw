@@ -1,0 +1,50 @@
+
+
+
+startwith program;
+
+program 	::= 	program_decl main program_decl 
+				
+			;
+
+main 		::=	"main" "{" statement "}"
+			;
+
+statement 	::=	assignment 
+					| input
+					| output
+					| function_call
+					| control_flow
+			;
+
+program_decl	::= 	var_decl program_decl
+						|	function_decl program_decl
+						|	data_type_decl program_decl
+						|	empty
+				;
+
+var_decl	::= 	ID ":" TYPE SEMI
+			;
+
+data_type_decl	::= 	"tdef" TYPE_ID "{" declaration_list "}" SEMI
+						| alias TYPE ID SEMI
+				;
+
+declaration_list	::= 	var_decl declaration_list
+							|	"," var_decl declaration_list
+							|	empty
+					;
+return_type 	::= 	TYPE
+				;
+
+function_decl	::=	general_function (SEMI | ":" return_type SEMI)
+				;
+
+general_function	::= 	"fdef" ID "(" formal_parameter_list ")" "{" function_body "}"
+					;
+
+formal_parameter_list	 ::= 	declaration_list
+						;
+
+function_body	 ::=	declaration_list statement (return_type | empty)
+				;
