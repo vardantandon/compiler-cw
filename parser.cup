@@ -15,6 +15,7 @@ statement 	::=	assignment
 					| output
 					| function_call
 					| control_flow
+					| empty
 			;
 
 program_decl	::= 	var_decl program_decl
@@ -23,7 +24,7 @@ program_decl	::= 	var_decl program_decl
 						|	empty
 				;
 
-var_decl	::= 	ID ":" TYPE SEMI
+var_decl	::= 	ID ":" TYPE (SEMI | empty)
 			;
 
 data_type_decl	::= 	"tdef" TYPE_ID "{" declaration_list "}" SEMI
@@ -43,8 +44,15 @@ function_decl	::=	general_function (SEMI | ":" return_type SEMI)
 general_function	::= 	"fdef" ID "(" formal_parameter_list ")" "{" function_body "}"
 					;
 
-formal_parameter_list	 ::= 	declaration_list
-						;
+formal_parameter_list	 ::= 	declaration_list 
+						 ;
 
-function_body	 ::=	declaration_list statement (return_type | empty)
+function_body	 ::=	function_body_helper (return_type | empty)
 				;
+
+function_body_helper  	::=		declaration_list statement function_body_helper  
+								| empty
+						; 
+
+
+
