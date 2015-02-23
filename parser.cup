@@ -74,7 +74,7 @@ val_type		::=			INT_V | RAT__V | FLOAT__V | BOOL_V | CHAR_V | SEQ_V | DICT_V | T
 
 // Work in progress 
 
-assignment		::=			ID ASSOP expr
+assignment		::=			ID ASSOP expr_list 
 				;  
 
 input 			::=			READ ID SEMI
@@ -84,8 +84,11 @@ output 			::=			PRINT expr SEMI
 				;
 
 function_call	::=			ID LPAREN expr_list RPAREN SEMI
-
 				;
+
+
+function_call_expr	::=			ID LPAREN expr_list RPAREN
+					;
 
 control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
 							| IF LPAREN expr RPAREN THEN body ELSE body FI
@@ -96,7 +99,8 @@ control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
 
 operator 		::= 		boolean_op | numeric_op | dictionary_op | sequence_op | comparison_op 
 				;
-
+binary_operator ::=			PLUS|MINUS|MULT|DIV|EXP|AND|OR|IMPL|CONCAT|LT|LTEQ|GT|GTEQ|EQ|NOTEQ
+				;
 boolean_op		::=			NOT | AND | OR | IMPL 
 				;
 
@@ -114,12 +118,12 @@ secquence_op	::=			IN
 				;
 
 comparison_op	::=			LT 
-							| LTQ
-							| RT
-							| RTQ
+							| LTEQ
+							| GT
+							| GTEQ
 							| EQ
 							| NOTEQ
-
+				;
 
 len 			::= 		LEN LPAREN ID RPAREN
 				;
@@ -127,31 +131,20 @@ len 			::= 		LEN LPAREN ID RPAREN
 
 field_ref		::=			ID DOT ID
 
-expr 			::= 		arithmetic_expr
-							|	boolean_expr
-							|	logic_expr
-							|	field_ref
-							|	function_call
-
+expr 			::= 		expr_part binary_operator expr_part
+							| expr_part 
+				;
+expr_part 		::= 		| function_call_expr
+							| number
+							| field_ref
+							| ID
+							| unary_operator expr
+							| LPAREN expr RPAREN 
 expr_list		::=			expr expr_helper
 				;
 expr_helper 	::= 		COMMA expr expr_helper
 							| empty
 				;
 
-number		::= 		(MINUS | empty) (INT_V | FLOAT_V | RAT_V) 
+number		::= 		(INT_V | FLOAT_V | RAT_V) 
 			;
-
-arithmetic_expr		::= 	number 
-							| number numeric_op number
-							| arithmetic_expr numeric_op arithmetic_expr
-					;
-//Work in progress
-
-
-
-
-
-
-
-
