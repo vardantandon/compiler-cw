@@ -1,4 +1,14 @@
 
+terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEQ , DICT , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT;
+
+terminal Integer INT_V;
+terminal Float FLOAT_V;
+terminal String RAT_V;
+terminal Char CHAR_V, BOOL_V;
+
+
+non terminal program , main , statement , program_decl , var_decl , data_type_decl , 
+			 declaration_list , return_type , funtion_decl , general_decl , formal_parameter_list , funtion_body , body , type , assignment , input , output , function_call , control_flow ,len;
 
 
 startwith program;
@@ -7,7 +17,7 @@ program 	::= 	program_decl main program_decl
 				
 			;
 
-main 		::=	"main" "{" statement "}"
+main 		::=	MAIN LBRACE statement RBRACE
 			;
 
 statement 	::=	assignment 
@@ -24,35 +34,124 @@ program_decl	::= 	var_decl program_decl
 						|	empty
 				;
 
-var_decl	::= 	ID ":" TYPE (SEMI | empty)
+var_decl	::= 	ID COLON type (ASSOP expr | empty) SEMI
 			;
 
-data_type_decl	::= 	"tdef" TYPE_ID "{" declaration_list "}" SEMI
-						| alias TYPE ID SEMI
+
+data_type_decl	::= 	TDEF ID LBRACE declaration_list RBRACE SEMI
+						| alias ID type SEMI
 				;
 
-declaration_list	::= 	var_decl declaration_list
-							|	"," var_decl declaration_list
-							|	empty
-					;
-return_type 	::= 	TYPE
+function_decl	::=	general_function (SEMI | COLON return_type SEMI)
 				;
 
-function_decl	::=	general_function (SEMI | ":" return_type SEMI)
-				;
-
-general_function	::= 	"fdef" ID "(" formal_parameter_list ")" "{" function_body "}"
+general_function	::= 	FDEF ID LPAREN formal_parameter_list RPAREN LBRACE function_body RBRACE
 					;
 
-formal_parameter_list	 ::= 	declaration_list 
+formal_parameter_list	 ::= 	var_decl helper_dl
+								| empty
 						 ;
 
-function_body	 ::=	function_body_helper (return_type | empty)
+
+declaration_list	::= 	var_decl helper_dl
+						;
+
+helper_dl					::=     COMMA var_decl helper_dl
+									|	empty
+						;
+
+function_body	 ::=	body (return_type | empty)
 				;
 
-function_body_helper  	::=		declaration_list statement function_body_helper  
+body  	::=		declaration_list statement body 
 								| empty
 						; 
+
+type 			::= 		INT | RAT | FLOAT | BOOL | CHAR | SEQ | DICT | TOP
+				;
+
+val_type		::=			INT_V | RAT__V | FLOAT__V | BOOL_V | CHAR_V | SEQ_V | DICT_V | TOP_V
+
+// Work in progress 
+
+assignment		::=			ID ASSOP expr
+				;  
+
+input 			::=			READ ID SEMI
+				;
+
+output 			::=			PRINT expr SEMI
+				;
+
+function_call	::=			ID LPAREN expr_list RPAREN SEMI
+
+				;
+
+control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
+							| IF LPAREN expr RPAREN THEN body ELSE body FI
+							| WHILE LPAREN expr RPAREN DO body OD
+							| FORALL LPAREN item IN interable RPAREN DO body OD
+							| RETURN expr SEMI
+				;
+
+operator 		::= 		boolean_op | numeric_op | dictionary_op | sequence_op | comparison_op 
+				;
+
+boolean_op		::=			NOT | AND | OR | IMPL 
+				;
+
+numeric_op		::= 		PLUS | MINUS | MULT | DIV | EXP
+				;
+
+dictionary_op   ::= 		IN | ID LSQB expr RSQB | len
+				;
+
+secquence_op	::=			IN 
+							|	CONCAT	
+							|	len 
+							|	ID LSQB expr RSQB	
+							|	ID LSQB (expr COLON expr | expr COLON | COLON expr) RSQB 
+				;
+
+comparison_op	::=			LT 
+							| LTQ
+							| RT
+							| RTQ
+							| EQ
+							| NOTEQ
+
+
+len 			::= 		LEN LPAREN ID RPAREN
+				;
+
+
+field_ref		::=			ID DOT ID
+
+expr 			::= 		arithmetic_expr
+							|	boolean_expr
+							|	logic_expr
+							|	field_ref
+							|	function_call
+
+expr_list		::=			expr expr_helper
+				;
+expr_helper 	::= 		COMMA expr expr_helper
+							| empty
+				;
+
+number		::= 		(MINUS | empty) (INT_V | FLOAT_V | RAT_V) 
+			;
+
+arithmetic_expr		::= 	number 
+							| number numeric_op number
+							| arithmetic_expr numeric_op arithmetic_expr
+					;
+//Work in progress
+
+
+
+
+
 
 
 
