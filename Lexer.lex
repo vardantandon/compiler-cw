@@ -4,8 +4,8 @@ import java_cup.runtime.*;
 
 %class Lexer
 %unicode
-/*%standalone*/
-%cup
+%standalone
+/*%cup*/
 %line
 %column
 
@@ -32,8 +32,9 @@ INTEGER  = -?(0|[1-9])[0-9]*
 FLOAT = -?[0-9]+.[0-9]+
 RATIONAL = -?([0-9]+_)?[0-9]+\/[0-9]+
 PRIMITIVE = {character}|{boolean}|{integer}|{float}|{rational}
-
+SEMI = ;
 %%
+{SEMI}		  { System.out.print("COMMENT"); return symbol(sym.SEMI);}
 {COMMENT}     { System.out.print("COMMENT"); return symbol(sym.comment);}
 {CHARACTER}   { System.out.print("CHAR"); return symbol(sym.character,new String(yytext()));}
 {ID}  	      { System.out.print("ID"); return symbol(sym.id,new String(yytext()));}

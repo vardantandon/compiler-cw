@@ -1,4 +1,13 @@
-terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT, SEQ, DICT,LANGLB,RANGLB;
+import java_cup.runtime.*;
+   
+parser code {:
+    
+    public void syntax_error(Symbol current_token) {
+	   report_error("Syntax error at line " + (current_token.left+1) + ", column "+ current_token.right, null);
+   }
+:};
+
+terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT, SEQ, DICT,LANGLB,RANGLB,PLUS,MINUS,DIV,MULT,EXP,AND,OR,IMPL,CONCAT,LT,LTEQ,GT,GTEQ,EQ,NOTEQ,NOT,LSQB,RSQB;
 
 terminal Integer INT_V;
 terminal Float FLOAT_V;
@@ -7,15 +16,18 @@ terminal Char CHAR_V, BOOL_V;
 
 
 non terminal program , main , statement , program_decl , var_decl , data_type_decl , 
-			 declaration_list , return_type , funtion_decl , general_decl , formal_parameter_list , funtion_body , body , type , assignment , input , output , function_call , control_flow ,len,dict,seq;
+			 declaration_list , return_type , funtion_decl , general_decl , formal_parameter_list , funtion_body , body , type , assignment , input , output , function_call , control_flow ,len,dict,seq, function_body,function_decl,expr,expr_part,tdef_list,alias,tdef_helper,general_function,formal_parameter_list_helper,statement_list,expr_list,item,iterable,seq_assignment,binary_operator,unary_operator,field_ref,assignment_type,dict_assignment,return_stmt,var_decl_empty,function_decl_empty,expr_part_slice,list_dict_elements,dict_element,list_dict_elements_helper,list_seq_assignment_type,list_seq_assignment,seq_element,list_seq_assignment_helper,expr_helper,number_minus,primitive,number,numbers,aggregated;
 
 
-startwith program;
+start with program;
 
 program 	::= 	declaration_list main declaration_list 
 			;
 
-main 		::=	MAIN LBRACE function_body RBRACE (empty| COLON type)
+main 		::=	MAIN LBRACE function_body RBRACE return_stmt
+			;
+return_stmt ::= COLON type
+				|
 			;
 
 statement 	::=	assignment SEMI
@@ -30,33 +42,38 @@ program_decl	::= 	var_decl SEMI
 						|	data_type_decl SEMI
 				;
 
-var_decl	::= 	ID COLON type (ASSOP expr | empty) SEMI
+var_decl	::= 	ID COLON type var_decl_empty SEMI
 			;
 
-
+var_decl_empty ::=	ASSOP expr 
+					|
+				;
 data_type_decl	::= 	TDEF ID LBRACE tdef_list RBRACE
 						| alias ID type 
 				;
 tdef_list		::=		var_decl tdef_helper
 				;
 tdef_helper		::=		COMMA var_decl tdef_helper
-						| empty
+						| 
 				;
-function_decl	::=	general_function (empty| COLON type)
+function_decl	::=	general_function function_decl_empty
 				;
+function_decl_empty ::= COLON type
+						|
+					;
 
 general_function	::= 	FDEF ID LPAREN formal_parameter_list RPAREN LBRACE function_body RBRACE
 					;
 
 formal_parameter_list	 ::= 	var_decl formal_parameter_list_helper
-								| empty
+								| 
 						 ;
 
 formal_parameter_list_helper	::= 	COMMA var_decl formal_parameter_list_helper
-										| empty
+										| 
 								;
 declaration_list	::= 	program_decl declaration_list
-							| empty
+							| 
 					;
 
 
@@ -66,7 +83,7 @@ function_body	 ::=	body
 body  	::=		declaration_list statement statement_list
 		;
 statement_list ::=	statement statement_list
-					|	empty
+					|	
 				;
 type 			::= 		INT | RAT | FLOAT | BOOL | CHAR | seq | dict | TOP | ID
 				;
@@ -87,38 +104,15 @@ function_call	::=			ID LPAREN expr_list RPAREN
 control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
 							| IF LPAREN expr RPAREN THEN body ELSE body FI
 							| WHILE LPAREN expr RPAREN DO body OD
-							| FORALL LPAREN item IN interable RPAREN DO body OD
+							| FORALL LPAREN item IN iterable RPAREN DO body OD
 							| RETURN expr SEMI
 				;
-
-operator 		::= 		boolean_op | numeric_op | dictionary_op | sequence_op | comparison_op 
+item			::=			ID;
+iterable		::=			ID|seq_assignment
 				;
 binary_operator ::=			PLUS|MINUS|MULT|DIV|EXP|AND|OR|IMPL|CONCAT|LT|LTEQ|GT|GTEQ|EQ|NOTEQ|IN
 				;
 unary_operator	::=			MINUS|NOT
-				;
-boolean_op		::=			NOT | AND | OR | IMPL 
-				;
-
-numeric_op		::= 		PLUS | MINUS | MULT | DIV | EXP
-				;
-
-dictionary_op   ::= 		IN | ID LSQB expr RSQB | len
-				;
-
-secquence_op	::=			IN 
-							|	CONCAT	
-							|	len 
-							|	ID LSQB expr RSQB	
-							|	ID LSQB (expr COLON expr | expr COLON | COLON expr) RSQB 
-				;
-
-comparison_op	::=			LT 
-							| LTEQ
-							| GT
-							| GTEQ
-							| EQ
-							| NOTEQ
 				;
 
 len 			::= 		LEN LPAREN ID RPAREN
@@ -134,7 +128,7 @@ expr_part 		::= 		function_call
 							| assignment_type
 							| len expr
 							| ID LSQB expr RSQB
-							| ID LSQB (expr|empty)COLON(empty|expr) RSQB
+							| ID LSQB expr_part_slice RSQB
 							| field_ref
 							| ID
 							| unary_operator expr
@@ -142,13 +136,17 @@ expr_part 		::= 		function_call
 							| seq_assignment
 							| LPAREN expr RPAREN
 				;
+expr_part_slice	::=	expr COLON expr
+						| expr COLON
+						| COLON expr
+					;
 dict_assignment ::= LBRACE list_dict_elements RBRACE
 				;
 list_dict_elements	::=	dict_element list_dict_elements_helper
-						| empty
+						| 
 					;
 list_dict_elements_helper	::=	COMMA dict_element list_dict_elements_helper
-								| empty
+								| 
 							;
 dict_element 	::=			(assignment_type|ID) COLON (assignment_type|ID)
 				;
@@ -156,22 +154,25 @@ dict_element 	::=			(assignment_type|ID) COLON (assignment_type|ID)
 seq_assignment	::=	LSQB list_seq_assignment_type RSQB
 				;
 list_seq_assignment ::=  	seq_element list_seq_assignment_helper
-							| empty
+							| 
 					;
 list_seq_assignment_helper ::=	COMMA seq_element list_seq_assignment_helper
-								| empty
+								| 
 							;
 seq_element 	::=		assignment_type|ID
 				;
 expr_list		::=		expr expr_helper
 				;
 expr_helper 	::= 	COMMA expr expr_helper
-						| empty
+						| 
 				;
 
-number		::= 		(MINUS|empty)(INT_V | FLOAT_V | RAT_V)
+number		::= 		number_minus(INT_V | FLOAT_V | RAT_V)
 			;
-primitive 	::= 		numbers | BOOL_V | CHAR_V
+number_minus ::= 	MINUS
+					|
+			;
+primitive 	::= 		number | BOOL_V | CHAR_V
 			;
 aggregated	::= 		seq_assignment | dict_assignment
 			;
