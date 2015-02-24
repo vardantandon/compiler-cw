@@ -1,5 +1,5 @@
 
-terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEQ , DICT , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT;
+terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT;
 
 terminal Integer INT_V;
 terminal Float FLOAT_V;
@@ -8,87 +8,86 @@ terminal Char CHAR_V, BOOL_V;
 
 
 non terminal program , main , statement , program_decl , var_decl , data_type_decl , 
-			 declaration_list , return_type , funtion_decl , general_decl , formal_parameter_list , funtion_body , body , type , assignment , input , output , function_call , control_flow ,len;
+			 declaration_list , return_type , funtion_decl , general_decl , formal_parameter_list , funtion_body , body , type , assignment , input , output , function_call , control_flow ,len,dict,seq;
 
 
 startwith program;
 
-program 	::= 	program_decl main program_decl 
-				
+program 	::= 	declaration_list main declaration_list 
 			;
 
-main 		::=	MAIN LBRACE statement RBRACE
+main 		::=	MAIN LBRACE function_body RBRACE (empty| COLON type)
 			;
 
-statement 	::=	assignment 
-					| input
-					| output
-					| function_call
+statement 	::=	assignment SEMI
+					| input	SEMI
+					| output SEMI
+					| function_call SEMI
 					| control_flow
-					| empty
 			;
 
-program_decl	::= 	var_decl program_decl
-						|	function_decl program_decl
-						|	data_type_decl program_decl
-						|	empty
+program_decl	::= 	var_decl SEMI
+						|	function_decl SEMI 
+						|	data_type_decl SEMI
 				;
 
 var_decl	::= 	ID COLON type (ASSOP expr | empty) SEMI
 			;
 
 
-data_type_decl	::= 	TDEF ID LBRACE declaration_list RBRACE SEMI
-						| alias ID type SEMI
+data_type_decl	::= 	TDEF ID LBRACE tdef_list RBRACE
+						| alias ID type 
 				;
-
-function_decl	::=	general_function (SEMI | COLON return_type SEMI)
+tdef_list		::=		var_decl tdef_helper
+				;
+tdef_helper		::=		COMMA var_decl tdef_helper
+						| empty
+				;
+function_decl	::=	general_function (empty| COLON type)
 				;
 
 general_function	::= 	FDEF ID LPAREN formal_parameter_list RPAREN LBRACE function_body RBRACE
 					;
 
-formal_parameter_list	 ::= 	var_decl helper_dl
+formal_parameter_list	 ::= 	var_decl formal_parameter_list_helper
 								| empty
 						 ;
 
+formal_parameter_list_helper	::= 	COMMA var_decl formal_parameter_list_helper
+										| empty
+								;
+declaration_list	::= 	program_decl declaration_list
+							| empty
+					;
 
-declaration_list	::= 	var_decl helper_dl
-						;
 
-helper_dl					::=     COMMA var_decl helper_dl
-									|	empty
-						;
-
-function_body	 ::=	body (return_type | empty)
+function_body	 ::=	body
 				;
 
-body  	::=		declaration_list statement body 
-								| empty
-						; 
-
-type 			::= 		INT | RAT | FLOAT | BOOL | CHAR | SEQ | DICT | TOP
+body  	::=		declaration_list statement_list  
+		; 
+statement_list ::=	statement statement_list
+					|	empty
+				;
+type 			::= 		INT | RAT | FLOAT | BOOL | CHAR | seq | dict | TOP | ID
 				;
 
-val_type		::=			INT_V | RAT__V | FLOAT__V | BOOL_V | CHAR_V | SEQ_V | DICT_V | TOP_V
+//val_type		::=			INT_V | RAT_V | FLOAT_V | BOOL_V | CHAR_V | SEQ_V | DICT_V | TOP_V
 
 // Work in progress 
 
 assignment		::=			ID ASSOP expr_list 
 				;  
 
-input 			::=			READ ID SEMI
+input 			::=			READ ID
 				;
 
-output 			::=			PRINT expr SEMI
+output 			::=			PRINT expr
 				;
 
-function_call	::=			ID LPAREN expr_list RPAREN SEMI
+function_call	::=			ID LPAREN expr_list RPAREN
 				;
 
-
-function_call_expr	::=			ID LPAREN expr_list RPAREN
-					;
 
 control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
 							| IF LPAREN expr RPAREN THEN body ELSE body FI
@@ -99,7 +98,9 @@ control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
 
 operator 		::= 		boolean_op | numeric_op | dictionary_op | sequence_op | comparison_op 
 				;
-binary_operator ::=			PLUS|MINUS|MULT|DIV|EXP|AND|OR|IMPL|CONCAT|LT|LTEQ|GT|GTEQ|EQ|NOTEQ
+binary_operator ::=			PLUS|MINUS|MULT|DIV|EXP|AND|OR|IMPL|CONCAT|LT|LTEQ|GT|GTEQ|EQ|NOTEQ|IN
+				;
+unary_operator	::=			MINUS|NOT
 				;
 boolean_op		::=			NOT | AND | OR | IMPL 
 				;
@@ -130,21 +131,59 @@ len 			::= 		LEN LPAREN ID RPAREN
 
 
 field_ref		::=			ID DOT ID
-
+				;
 expr 			::= 		expr_part binary_operator expr_part
 							| expr_part 
 				;
-expr_part 		::= 		| function_call_expr
-							| number
+expr_part 		::= 		function_call
+							| assignment_type
+							| len expr
+							| ID LSQB expr RSQB
+							| ID LSQB (expr|empty)COLON(empty|expr) RSQB
 							| field_ref
 							| ID
 							| unary_operator expr
-							| LPAREN expr RPAREN 
-expr_list		::=			expr expr_helper
+							| dict_assignment
+							| seq_assignment
+							| LPAREN expr RPAREN
 				;
-expr_helper 	::= 		COMMA expr expr_helper
-							| empty
+dict_assignment ::= LBRACE list_dict_elements RBRACE
+				;
+list_dict_elements	::=	dict_element list_dict_elements_helper
+						| empty
+					;
+list_dict_elements_helper	::=	COMMA dict_element list_dict_elements_helper
+								| empty
+							;
+dict_element 	::=			(assignment_type|ID) COLON (assignment_type|ID)
 				;
 
-number		::= 		(INT_V | FLOAT_V | RAT_V) 
+seq_assignment	::=	LSQB list_seq_assignment_type RSQB
+				;
+list_seq_assignment ::=  	seq_element list_seq_assignment_helper
+							| empty
+					;
+list_seq_assignment_helper ::=	COMMA seq_element list_seq_assignment_helper
+								| empty
+							;
+seq_element 	::=		(assignment_type|ID)
+				;
+expr_list		::=		expr expr_helper
+				;
+expr_helper 	::= 	COMMA expr expr_helper
+						| empty
+				;
+
+number		::= 		(MINUS|empty)(INT_V | FLOAT_V | RAT_V)
+			;
+primitive 	::= 		numbers | BOOL_V | CHAR_V
+			;
+aggregated	::= 		seq_assignment | dict_assignment
+			;
+assignment_type ::=		primitive | aggregated
+				;
+dict 		::=			DICT LANGLB type COMMA type RANGLB
+			;
+
+seq 		::=			SEQ LANGLB type RANGLB
 			;
