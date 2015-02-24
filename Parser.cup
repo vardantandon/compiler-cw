@@ -88,7 +88,7 @@ declaration_list	::= 	program_decl declaration_list
 function_body	 ::=	body
 				;
 
-body  	::=		declaration_list statement statement_list
+body  	::=		program_decl declaration_list statement statement_list
 		;
 statement_list ::=	statement statement_list
 					|	
