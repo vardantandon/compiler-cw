@@ -8,7 +8,7 @@ parser code {:
    }
 :};
 
-terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT, SEQ, DICT,PLUS,MINUS,DIV,MULT,EXP,AND,OR,IMPL,CONCAT,LT,LTEQ,GT,GTEQ,EQ,NOTEQ,NOT,LSQB,RSQB,STRING,ALIAS;
+terminal ID , BOOL , INT , RAT , FLOAT , CHAR , SEMI , MAIN , COMMA , TDEF , FDEF , IF , THEN , ELSE , RBRACE , LBRACE , RPAREN , LPAREN , COLON , ASSOP , READ , PRINT , FI, IN , DO , OD , WHILE , FORALL , RETURN, TOP , LEN, DOT, SEQ, DICT,PLUS,MINUS,DIV,MULT,EXP,AND,OR,IMPL,CONCAT,LT,LTEQ,GT,GTEQ,EQ,NOTEQ,NOT,LSQB,RSQB,STRING,ALIAS,GARBAGE;
 
 terminal Integer INT_V;
 terminal Float FLOAT_V;
@@ -17,7 +17,7 @@ terminal Char CHAR_V, BOOL_V;
 
 
 non terminal program , main , statement , program_decl , var_decl , data_type_decl , 
-			 declaration_list, formal_parameter_list , body , type , assignment , input , output , function_call , control_flow ,len,dict,seq, function_body,function_decl,expr,expr_part,tdef_list,tdef_helper,general_function,formal_parameter_list_helper,statement_list,expr_list,item,iterable,seq_assignment,binary_operator,unary_operator,assignment_type,dict_assignment,return_stmt,var_decl_empty,function_decl_empty,dict_element,seq_element,primitive,expr_next,expr_or_empty,id_followed_by,index,slicing,aggregate,dict_element_list,dict_element_list_tail,seq_element_list,seq_element_list_tail,expr_list_tail,declaration_list_tail,statement_list_tail,body_followup1,declaration_list_or_empty;
+			 declaration_list, formal_parameter_list , body , type , assignment , input , output , function_call , control_flow ,len,dict,seq, function_body,function_decl,expr,expr_part,tdef_list,tdef_helper,general_function,formal_parameter_list_helper,statement_list,expr_list,item,iterable,seq_assignment,binary_operator,unary_operator,assignment_type,dict_assignment,return_stmt,var_decl_empty,function_decl_empty,dict_element,seq_element,primitive,expr_next,expr_or_empty,id_followed_by,index,slicing,aggregate,dict_element_list,dict_element_list_tail,seq_element_list,seq_element_list_tail,expr_list_tail,declaration_list_tail,statement_list_tail,body_followup1,declaration_list_or_empty,slicing_or_empty,function_call_follow_up,formal_parameter_decl;
 
 precedence left SEMI;
 precedence left IF, READ, PRINT, WHILE, FORALL,RETURN;
@@ -38,7 +38,7 @@ program 	::= 	declaration_list_or_empty main declaration_list_or_empty
 declaration_list_or_empty ::= 	declaration_list
 								|
 							;
-main 		::=	MAIN LBRACE function_body RBRACE return_stmt
+main 		::=	MAIN LBRACE function_body RBRACE SEMI
 			;
 return_stmt ::= COLON type SEMI|SEMI;
 
@@ -78,11 +78,11 @@ function_decl_empty ::= COLON type
 general_function	::= 	FDEF ID LPAREN formal_parameter_list RPAREN LBRACE function_body RBRACE
 					;
 
-formal_parameter_list	 ::= 	var_decl formal_parameter_list_helper
+formal_parameter_list	 ::= 	formal_parameter_decl formal_parameter_list_helper
 								| 
 						 ;
-
-formal_parameter_list_helper	::= 	COMMA var_decl formal_parameter_list_helper
+formal_parameter_decl	::=		ID COLON type;
+formal_parameter_list_helper	::= 	COMMA formal_parameter_decl formal_parameter_list_helper
 										| 
 								;
 declaration_list ::= program_decl | declaration_list program_decl;
@@ -111,8 +111,10 @@ input 			::=			READ ID
 output 			::=			PRINT expr
 				;
 
-function_call	::=			ID LPAREN expr_list RPAREN
-				;
+function_call	::=			ID LPAREN function_call_follow_up;
+
+function_call_follow_up ::= expr_list RPAREN| RPAREN;
+
 
 
 control_flow	::= 		IF LPAREN expr RPAREN THEN body FI
@@ -151,15 +153,14 @@ expr_part 		::= 		ID id_followed_by
 				;
 id_followed_by	::=	 LSQB index RSQB id_followed_by
 					 | DOT expr_part
-					 | LPAREN expr_list RPAREN
+					 | LPAREN function_call_follow_up
 					 |
 				;
-index	::=		expr slicing
+index	::=		expr slicing_or_empty
 				| slicing
 		;
-slicing ::=	COLON expr_or_empty
-			| 
-		;
+slicing ::=	COLON expr_or_empty;
+slicing_or_empty ::= slicing | ;
 assignment_type	::=	primitive | aggregate;
 primitive	::= 		INT_V | RAT_V | FLOAT_V | CHAR_V | BOOL_V;
 aggregate 	::=			dict_assignment|seq_assignment;

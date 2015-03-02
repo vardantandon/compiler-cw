@@ -28,7 +28,7 @@ multiLineComment = "/#" ({whiteSpace}|{inputCharacter}|{whiteSpace}|{lineTermina
 endOfLineComment = "#" {inputCharacter}* {lineTerminator}?
 COMMENT = {multiLineComment} | {endOfLineComment}
 
-CHAR_V = "\'"."\'"
+CHAR_V = "\'"([\\]?.)?"\'"
 BOOL_V  = [T|F]
 INT_V  = (0|[1-9])[0-9]*
 FLOAT_V = [0-9]+\.[0-9]+
@@ -164,3 +164,7 @@ QUOTE = \"
 {ALIAS}		  	{  return symbol(sym.ALIAS);}
 {STRING}  	    {  return symbol(sym.STRING,new String(yytext()));}
 {ID}  	      	{  return symbol(sym.ID,new String(yytext()));}
+[^]             { System.out.println("Syntax error at line "+ yyline+1 + ", column "+ yycolumn); 
+				  throw new Error("Illegal character <"+
+                                                    yytext()+">");
+                }
